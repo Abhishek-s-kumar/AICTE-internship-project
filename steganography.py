@@ -1,5 +1,8 @@
 import cv2
 import os
+import tkinter as tk
+from tkinter import simpledialog
+from tkinter import filedialog
 
 def generate_lookup_tables():
     encrypt_table = {chr(i): i for i in range(256)}
@@ -24,31 +27,58 @@ def decrypt_message(img):
         z = (z + 1) % 3
     return decrypted_message
 
-# Load the image
-img = cv2.imread("sukana.png")
-if img is None:
-    raise ValueError("Error loading the image.")
+def open_image():
+    file_path = tk.filedialog.askopenfilename(title="Select Image File", filetypes=[("Image files", "*.png;*.jpg;*.jpeg")])
+    img = cv2.imread(file_path)
+    if img is None:
+        tk.messagebox.showerror("Error", "Failed to load the image.")
+    return img
 
-# Encrypt the image
-msg = input("Enter secret message: ")
-encrypt_password = input("Enter encryption passcode:")
-encrypt_table, decrypt_table = generate_lookup_tables()
-encrypt_image(img, msg)
+def encrypt_and_save():
+    global img, msg, encrypt_password_entry
+    img = open_image()
+    if img is not None:
+        msg = msg_entry.get()
+        encrypt_image(img, msg)
+        cv2.imwrite("encryptedImage.jpg", img)
+        tk.messagebox.showinfo("Success", "Image encrypted and saved as encryptedImage.jpg.")
+    msg_entry.delete(0, tk.END)  # Clear the message entry
 
-# Save the encrypted image
-cv2.imwrite("encryptedImage.jpg", img)
-os.startfile("encryptedImage.jpg")
-
-# Decrypt the message
-attempts = 3  # Set the maximum number of attempts
-for _ in range(attempts):
-    decrypt_password = input("Enter decryption passcode:")
-    if decrypt_password == encrypt_password:
+def decrypt_and_display():
+    global img, msg, encrypt_password_entry
+    decrypt_password = decrypt_password_entry.get()
+    if decrypt_password == encrypt_password_entry.get():
         decrypted_msg = decrypt_message(img)
-        print("Decrypted message =", decrypted_msg)
-        break
+        tk.messagebox.showinfo("Decryption Result", f"Decrypted message: {decrypted_msg}")
     else:
-        print("Incorrect password. Please try again.")
-else:
-    print("Exceeded maximum attempts. Exiting.")
-    exit()
+        tk.messagebox.showerror("Error", "Incorrect password.")
+
+# Main GUI window
+root = tk.Tk()
+root.title("Image Encryption/Decryption")
+
+# Text Entry Boxes
+msg_label = tk.Label(root, text="Enter Secret Message:")
+msg_label.pack()
+msg_entry = tk.Entry(root)
+msg_entry.pack(pady=5)
+
+encrypt_password_label = tk.Label(root, text="Enter Encryption Passcode:")
+encrypt_password_label.pack()
+encrypt_password_entry = tk.Entry(root, show="*")
+encrypt_password_entry.pack(pady=5)
+
+decrypt_password_label = tk.Label(root, text="Enter Decryption Passcode:")
+decrypt_password_label.pack()
+decrypt_password_entry = tk.Entry(root, show="*")
+decrypt_password_entry.pack(pady=5)
+
+# Buttons
+encrypt_button = tk.Button(root, text="Encrypt Image", command=encrypt_and_save)
+encrypt_button.pack(pady=10)
+
+decrypt_button = tk.Button(root, text="Decrypt Image", command=decrypt_and_display)
+decrypt_button.pack(pady=10)
+
+# Run the GUI
+root.mainloop()
